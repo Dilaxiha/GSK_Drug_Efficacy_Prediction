@@ -1,0 +1,120 @@
+RAW DATA PROBLEM AUDIT
+Source: C:\Users\Owner\BCP_3\clinical_data_raw.csv
+Dimensions: 1,155,000 rows x 41 columns
+Audit scope: complete raw file; no sampling, cleaning, imputation, or outlier removal.
+
+[1] SCHEMA AND FORMATTING
+- Column names with leading/trailing whitespace: [' age', 'gender ']
+- 'Gender': 85,747 values contain leading/trailing whitespace; examples: '  Other  ', ' Female', ' ', '  Mal', '  Femal', '  F  '
+- 'gender ': 2,437 values contain leading/trailing whitespace; examples: ' ', ' Female'
+- 'Ethnicity': 31,568 values contain leading/trailing whitespace; examples: ' '
+- 'Drug_Name': 17,118 values contain leading/trailing whitespace; examples: ' ', '  amoxycillin  ', '  LISINOPRIL  ', '  Doxycycline  ', '  omeprazol  ', ' Omeprazol'
+- 'drug_name': 12,805 values contain leading/trailing whitespace; examples: ' '
+- 'Dosage': 1,377 values contain leading/trailing whitespace; examples: ' '
+- 'Route': 39,593 values contain leading/trailing whitespace; examples: ' IM', ' ', '  Ophthalmic  ', '  ORAL', ' Ophthalmic', ' oral'
+- 'Diagnosis': 3,750 values contain leading/trailing whitespace; examples: ' Epilepsy', '  htn', '  Atrial Fibrillation', '  T2DM  ', '  Rheumatoid Arthritis', '  N/A  '
+- 'Smoking_Status': 36,927 values contain leading/trailing whitespace; examples: ' '
+
+[2] MISSING VALUES AND PLACEHOLDERS
+- 'patient_id': 101,482 blank/missing values (8.79%)
+- 'Age': 69,936 blank/missing values (6.06%)
+- ' age': 1,102,738 blank/missing values (95.48%)
+- 'Gender': 256,193 blank/missing values (22.18%)
+- 'Gender': 123,086 placeholder values ('unknown', '-', 'Unknown', ' N/A', '  NA', 'NA ')
+- 'gender ': 1,128,109 blank/missing values (97.67%)
+- 'gender ': 3,689 placeholder values ('unknown', 'Unknown', '-')
+- 'Ethnicity': 234,923 blank/missing values (20.34%)
+- 'Ethnicity': 63,252 placeholder values ('-', 'Unknown')
+- 'Weight_kg': 57,941 blank/missing values (5.02%)
+- 'Weight_lbs': 64,152 blank/missing values (5.55%)
+- 'Height_cm': 172,218 blank/missing values (14.91%)
+- 'BMI': 86,040 blank/missing values (7.45%)
+- 'blood_pressure': 123,626 blank/missing values (10.70%)
+- 'Systolic_BP': 103,846 blank/missing values (8.99%)
+- 'Diastolic_BP': 58,915 blank/missing values (5.10%)
+- 'Heart_Rate': 130,529 blank/missing values (11.30%)
+- 'Temperature_F': 134,530 blank/missing values (11.65%)
+- 'Hemoglobin': 109,547 blank/missing values (9.48%)
+- 'WBC_Count': 119,364 blank/missing values (10.33%)
+- 'ALT_Enzyme': 58,723 blank/missing values (5.08%)
+- 'AST_Enzyme': 62,550 blank/missing values (5.42%)
+- 'Creatinine': 143,619 blank/missing values (12.43%)
+- 'eGFR': 127,167 blank/missing values (11.01%)
+- 'HbA1c': 62,478 blank/missing values (5.41%)
+- 'Total_Cholesterol': 143,994 blank/missing values (12.47%)
+- 'Drug_Name': 161,339 blank/missing values (13.97%)
+- 'Drug_Name': 53,361 placeholder values ('-', 'UNKNOWN', 'na', 'none', ' n/a', ' N/A')
+- 'drug_name': 192,545 blank/missing values (16.67%)
+- 'drug_name': 51,338 placeholder values ('-', 'UNKNOWN', 'na', 'none')
+- 'Dosage': 159,804 blank/missing values (13.84%)
+- 'Dosage': 1,433 placeholder values ('unknown')
+- 'Duration_Days': 162,672 blank/missing values (14.08%)
+- 'Route': 260,312 blank/missing values (22.54%)
+- 'Route': 71,550 placeholder values ('-', 'Unknown', 'Unknown ', 'NA ', '  N/A', ' Unknown')
+- 'Concurrent_Drugs': 149,040 blank/missing values (12.90%)
+- 'Diagnosis': 160,802 blank/missing values (13.92%)
+- 'Diagnosis': 57,153 placeholder values ('Unknown', '-', '  N/A  ', ' Unknown', '  Unknown', ' N/A')
+- 'Smoking_Status': 266,387 blank/missing values (23.06%)
+- 'Smoking_Status': 74,263 placeholder values ('-', 'Unknown')
+- 'Alcohol_Use': 278,813 blank/missing values (24.14%)
+- 'Alcohol_Use': 164,442 placeholder values ('-', 'Unknown', 'none')
+- 'Admission_Date': 335,312 blank/missing values (29.03%)
+- 'Treatment_Outcome': 70,592 blank/missing values (6.11%)
+- 'Adverse_Event': 90,047 blank/missing values (7.80%)
+- 'Adverse_Event': 1,453 placeholder values ('Unknown')
+- 'Readmission_30d': 83,839 blank/missing values (7.26%)
+- 'Notes': 998,781 blank/missing values (86.47%)
+- 'Extra_Col_1': 1,155,000 blank/missing values (100.00%)
+- 'Extra_Col_2': 1,155,000 blank/missing values (100.00%)
+- 'unnamed_0': 118,680 blank/missing values (10.28%)
+
+[3] DATA TYPES AND CONVERSION FAILURES
+- 'Dosage': 12,800 non-empty values fail numeric conversion; examples: '1/2 tab', 'two tablets', '2x daily 50mg', '50mg', 'unknown', '100 mg'
+- 'Duration_Days': 5,557 non-empty values fail numeric conversion; examples: 'chronic', 'ongoing', 'lifetime'
+
+[4] INVALID CATEGORICAL CODES AND SPELLING VARIATION
+- 'Gender': 163,737 values outside expected codes ['0', '1', 'f', 'female', 'm', 'male', 'other', 'unknown']; examples: '-', 'O', 'Mal', 'Femal', '  Mal', '  Femal'
+- 'Gender': 23 distinct raw spellings; examples: 'Female', 'unknown', '0', 'male', 'm', 'female'
+- 'gender ': 4,864 values outside expected codes ['0', '1', 'f', 'female', 'm', 'male', 'other', 'unknown']; examples: 'O', 'Femal', '-', 'Mal'
+- 'gender ': 21 distinct raw spellings; examples: '', 'Female', '0', 'O', 'Other', 'other'
+- 'Route': 321,755 values outside expected codes ['im', 'intramuscular', 'intravenous', 'iv', 'oral', 'sc', 'subcutaneous', 'unknown']; examples: 'inhaled', 'Rectal', '-', 'Ophthalmic', 'rectal', 'TOPICAL'
+- 'Route': 28 distinct raw spellings; examples: 'iv', 'oral', 'SC', 'intravenous', 'im', 'subcutaneous'
+- 'Treatment_Outcome': 8 distinct raw spellings; examples: '0', '1', 'yes', 'no', 'Effective', 'Ineffective'
+
+[5] EXTREME AND CLINICALLY IMPLAUSIBLE NUMERIC VALUES
+- 'age': 17,703 values outside plausible range [0, 120]; observed min=-31, max=999.1; examples: '999.0', '-3.0', '150.0', '-1.0', '-10.0', '-5.0'
+- 'age': 27,642 statistical IQR outliers; bounds [4.5, 104.5]
+- 'weight_kg': 14,436 values outside plausible range [20, 400]; observed min=-13.1, max=500; examples: '482.4976989715469', '0.0', '12.2', '-1.0', '465.3793383435054', '411.2473189032458'
+- 'weight_kg': 23,100 statistical IQR outliers; bounds [28.45, 127.2]
+- 'bmi': 71,974 values outside plausible range [10, 80]; observed min=-inf, max=inf; examples: '155.8', '0.0', '-999.0', 'inf', '5.3', '357.241619374308'
+- 'bmi': 76,698 statistical IQR outliers; bounds [5.999, 48.4]
+- 'hemoglobin': 10,526 values outside plausible range [3, 25]; observed min=-1.09, max=99.06; examples: '-1.0', '0.0', '0.1', '99.0', '50.0', '-1.0902211337663763'
+- 'hemoglobin': 16,796 statistical IQR outliers; bounds [7.5, 19.5]
+- 'wbc_count': 1,035,454 values outside plausible range [1, 100]; observed min=-4529, max=1e+06; examples: '3977.0', '4710.0', '7521.0', '4779.0', '8913.0', '7448.0'
+- 'wbc_count': 16,910 statistical IQR outliers; bounds [662.5, 1.433e+04]
+- 'alt_enzyme': 8,129 values outside plausible range [0, 1000]; observed min=-5, max=9999; examples: '-5.0', '5000.0', '9999.0'
+- 'alt_enzyme': 54,094 statistical IQR outliers; bounds [-14.6, 67.8]
+- 'ast_enzyme': 8,195 values outside plausible range [0, 1000]; observed min=-5, max=9999; examples: '-5.0', '5000.0', '9999.0'
+- 'ast_enzyme': 44,748 statistical IQR outliers; bounds [-7.45, 54.55]
+- 'creatinine': 7,577 values outside plausible range [0, 20]; observed min=-1, max=99; examples: '50.0', '99.0', '-1.0'
+- 'creatinine': 36,288 statistical IQR outliers; bounds [-0.075, 2.365]
+- 'egfr': 9,149 values outside plausible range [0, 250]; observed min=-39.5, max=999; examples: '-10.0', '999.0', '-1.0', '-22.1', '-7.5', '-2.9'
+- 'egfr': 16,779 statistical IQR outliers; bounds [6.85, 143.2]
+- 'hba1c': 14,462 values outside plausible range [2, 20]; observed min=-3.1, max=50; examples: '-1.0', '1.1', '1.9', '1.6', '1.5', '50.0'
+- 'hba1c': 18,694 statistical IQR outliers; bounds [1.7, 11.3]
+- 'dosage': 1,512 values outside plausible range [0, 5000]; observed min=-1, max=1000; examples: '-1.0'
+- 'duration_days': 3,771 values outside plausible range [0, 3650]; observed min=-1, max=9999; examples: '9999.0', '-1.0'
+- 'duration_days': 111,070 statistical IQR outliers; bounds [-127.5, 268.5]
+
+[6] DUPLICATE ROWS
+- Exact duplicate rows: 70,017 (6.06%)
+
+[7] TARGET DISTRIBUTION
+- treatment_outcome='0': 840,304 (72.75%)
+- treatment_outcome='1': 240,475 (20.82%)
+- treatment_outcome=<NA>: 70,592 (6.11%)
+- treatment_outcome='no': 1,230 (0.11%)
+- treatment_outcome='yes': 1,214 (0.11%)
+- treatment_outcome='effective': 608 (0.05%)
+- treatment_outcome='ineffective': 577 (0.05%)
+- Binary minority/majority ratio: 0.2877

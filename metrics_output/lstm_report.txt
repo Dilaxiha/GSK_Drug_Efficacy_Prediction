@@ -1,0 +1,24 @@
+Model Name: LSTM Network
+Execution Time (seconds): 39.467
+Optimal Decision Threshold: 0.269339
+
+Metrics:
+pr_auc: 0.223085
+f1_score: 0.365144
+recall: 0.999890
+roc_auc: 0.498875
+accuracy: 0.223384
+precision: 0.223355
+
+Confusion Matrix: TN=9, FP=157711, FN=5, TP=45356
+
+Classification Report:
+                 precision    recall  f1-score   support
+
+Ineffective (0)       0.64      0.00      0.00    157720
+  Effective (1)       0.22      1.00      0.37     45361
+
+       accuracy                           0.22    203081
+      macro avg       0.43      0.50      0.18    203081
+   weighted avg       0.55      0.22      0.08    203081
+

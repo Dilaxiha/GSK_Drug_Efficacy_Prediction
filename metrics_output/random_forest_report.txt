@@ -1,0 +1,38 @@
+======================================================================
+CLINICAL MODEL PERFORMANCE & OVERFITTING REPORT: Random Forest
+======================================================================
+Optimal Decision Threshold: 0.466299
+
+--- MULTI-METRIC OVERFITTING & GENERALIZATION DIAGNOSIS ---
+Metric      | Train    | Test     | Gap (Train-Test) | Status
+----------------------------------------------------------------------
+PR-AUC      | 0.400619 | 0.342601 | 0.058017         | Moderate Overfit
+F1-Score    | 0.440529 | 0.416386 | 0.024143         | Moderate Overfit
+ROC-AUC     | 0.700676 | 0.652561 | 0.048116         | Moderate Overfit
+
+--- FINAL TEST SET METRICS ---
+PR-AUC    : 0.342601
+F1-Score  : 0.416386
+Recall    : 0.717731
+Precision : 0.293259
+ROC-AUC   : 0.652561
+Accuracy  : 0.550598
+
+Execution Time (seconds): 80.94
+Imbalance Strategy: class_weight='balanced'
+
+======================================================================
+CONFUSION MATRIX (TN, FP, FN, TP)
+79259, 78461, 12804, 32557
+
+CLASSIFICATION REPORT
+                 precision    recall  f1-score   support
+
+Ineffective (0)       0.86      0.50      0.63    157720
+  Effective (1)       0.29      0.72      0.42     45361
+
+       accuracy                           0.55    203081
+      macro avg       0.58      0.61      0.53    203081
+   weighted avg       0.73      0.55      0.59    203081
+
+======================================================================

@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Exceed GitHub's 100MB file limit; regenerate locally via the pipeline scripts
+clinical_data_raw.csv
+dataset/clinical_data_cleaned.csv
+dataset/feature_engineered_clinical_data.csv

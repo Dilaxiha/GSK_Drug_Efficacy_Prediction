@@ -1,0 +1,38 @@
+======================================================================
+CLINICAL MODEL PERFORMANCE & OVERFITTING REPORT: Gradient Boosting
+======================================================================
+Optimal Decision Threshold: 0.484903
+
+--- MULTI-METRIC OVERFITTING & GENERALIZATION DIAGNOSIS ---
+Metric      | Train    | Test     | Gap (Train-Test) | Status
+----------------------------------------------------------------------
+PR-AUC      | 0.357456 | 0.345911 | 0.011545         | Well-Balanced
+F1-Score    | 0.422455 | 0.416779 | 0.005675         | Well-Balanced
+ROC-AUC     | 0.665244 | 0.654322 | 0.010922         | Well-Balanced
+
+--- FINAL TEST SET METRICS ---
+PR-AUC    : 0.345911
+F1-Score  : 0.416779
+Recall    : 0.676264
+Precision : 0.301206
+ROC-AUC   : 0.654322
+Accuracy  : 0.577248
+
+Execution Time (seconds): 29.029
+Imbalance Strategy: class_weight='balanced' with early_stopping=True
+
+======================================================================
+CONFUSION MATRIX (TN, FP, FN, TP)
+86552, 71168, 14685, 30676
+
+CLASSIFICATION REPORT
+                 precision    recall  f1-score   support
+
+Ineffective (0)       0.85      0.55      0.67    157720
+  Effective (1)       0.30      0.68      0.42     45361
+
+       accuracy                           0.58    203081
+      macro avg       0.58      0.61      0.54    203081
+   weighted avg       0.73      0.58      0.61    203081
+
+======================================================================
