@@ -1,0 +1,22 @@
+GRADIENT BOOSTING: BASELINE VS TUNED COMPARISON
+================================================
+Selected configuration: Tuned
+Baseline CV PR-AUC (train-only, 3-fold): 0.346952
+Tuned CV PR-AUC (train-only, 3-fold):    0.347040
+Best params from search: {'class_weight': 'balanced', 'l2_regularization': 0.5, 'learning_rate': 0.05, 'max_bins': 255, 'max_depth': 7, 'max_iter': 287, 'max_leaf_nodes': 30, 'min_samples_leaf': 29}
+
+Metric      Baseline (Test)   Final (Test)      Change      
+PR-AUC      0.345911          0.346358          +0.000447
+F1          0.416779          0.416773          -0.000006
+Precision   0.301206          0.304342          +0.003136
+Recall      0.676264          0.660942          -0.015322
+ROC-AUC     0.654322          0.654479          +0.000157
+Accuracy    0.577248          0.586815          +0.009568
+Threshold   0.484903          0.491249          +0.006346
+
+GENERALIZATION (final model)
+Split       PR-AUC      ROC-AUC     
+Train       0.353454    0.662622    
+Validation  0.348563    0.658161    
+Test        0.346358    0.654479    
+Train-Test PR-AUC gap: 0.007096 | Diagnosis: Well-Balanced

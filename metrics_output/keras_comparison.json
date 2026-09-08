@@ -1,0 +1,47 @@
+{
+  "selected_configuration": "Tuned (deeper)",
+  "baseline_validation_pr_auc": 0.34766953201752565,
+  "best_validation_pr_auc": 0.34891824301340646,
+  "best_config": {
+    "hidden_units": [
+      128,
+      64,
+      32
+    ],
+    "dropout": [
+      0.3,
+      0.3,
+      0.2
+    ],
+    "l2": 0.0001,
+    "learning_rate": 0.001,
+    "batch_size": 2048
+  },
+  "baseline_test": {
+    "pr_auc": 0.3446671567364577,
+    "f1_score": 0.4158858647569819,
+    "precision": 0.3040086364932578,
+    "recall": 0.6580542756993893,
+    "roc_auc": 0.6533984743480602,
+    "accuracy": 0.587115485939108,
+    "threshold": 0.48390185832977295
+  },
+  "final_test": {
+    "pr_auc": 0.345357136053697,
+    "f1_score": 0.4174198110175484,
+    "precision": 0.29461296264370423,
+    "recall": 0.7157910980798483,
+    "roc_auc": 0.6540372278833074,
+    "accuracy": 0.5537150201151265,
+    "threshold": 0.46603986620903015
+  },
+  "generalization": {
+    "train_pr_auc": 0.34998196442392143,
+    "val_pr_auc": 0.34891824301340646,
+    "test_pr_auc": 0.345357136053697,
+    "pr_auc_gap": 0.004624828370224432,
+    "f1_gap": 0.0031413773814141233,
+    "roc_auc_gap": 0.0056494688546515626,
+    "overfitting_diagnosis": "Well-Balanced"
+  }
+}

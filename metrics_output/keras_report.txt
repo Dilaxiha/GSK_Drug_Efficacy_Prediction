@@ -1,24 +1,30 @@
 Model Name: Keras MLP
-Execution Time (seconds): 49.396
-Optimal Decision Threshold: 0.364608
+Architecture: {'hidden_units': [128, 64, 32], 'dropout': [0.3, 0.3, 0.2], 'l2': 0.0001, 'learning_rate': 0.001, 'batch_size': 2048, 'label': 'regenerated'}
+Execution Time (seconds): 2.527
+Optimal Decision Threshold: 0.466040
+
+--- GENERALIZATION ---
+PR-AUC  | Train=0.349982 Val=0.348918 Test=0.345357 Gap=0.004625 Well-Balanced
+ROC-AUC | Train=0.659687 Val=0.657817 Test=0.654037 Gap=0.005649
+F1      | Train=0.420561 Test=0.417420 Gap=0.003141
 
 Metrics:
-pr_auc: 0.341115
-f1_score: 0.412745
-recall: 0.704063
-roc_auc: 0.648254
-accuracy: 0.552494
-precision: 0.291947
+pr_auc: 0.345357
+f1_score: 0.417420
+recall: 0.715791
+roc_auc: 0.654037
+accuracy: 0.553715
+precision: 0.294613
 
-Confusion Matrix: TN=80264, FP=77456, FN=13424, TP=31937
+Confusion Matrix: TN=79980, FP=77740, FN=12892, TP=32469
 
 Classification Report:
                  precision    recall  f1-score   support
 
 Ineffective (0)       0.86      0.51      0.64    157720
-  Effective (1)       0.29      0.70      0.41     45361
+  Effective (1)       0.29      0.72      0.42     45361
 
        accuracy                           0.55    203081
-      macro avg       0.57      0.61      0.53    203081
+      macro avg       0.58      0.61      0.53    203081
    weighted avg       0.73      0.55      0.59    203081
 

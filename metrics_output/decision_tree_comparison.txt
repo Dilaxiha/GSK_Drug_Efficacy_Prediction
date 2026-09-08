@@ -1,0 +1,15 @@
+DECISION TREE: BASELINE VS TUNED COMPARISON
+============================================
+Selected configuration: Tuned
+Baseline CV PR-AUC (train-only, 3-fold): 0.330672
+Tuned CV PR-AUC (train-only, 3-fold):    0.332507
+Best params from search: {'class_weight': None, 'criterion': 'gini', 'max_depth': 6, 'max_features': None, 'min_samples_leaf': 110, 'min_samples_split': 150}
+
+Metric      Baseline (Test)   Final (Test)      
+PR-AUC      0.330974          0.332000          
+F1          0.411660          0.411825          
+Precision   0.286453          0.287847          
+Recall      0.731311          0.723397          
+ROC-AUC     0.646960          0.647272          
+Accuracy    0.533088          0.538455          
+Threshold   0.486259          0.215920          

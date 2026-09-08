@@ -1,0 +1,38 @@
+======================================================================
+CLINICAL MODEL PERFORMANCE & OVERFITTING REPORT: Decision Tree (Baseline)
+======================================================================
+Optimal Decision Threshold: 0.486259
+
+--- MULTI-METRIC OVERFITTING & GENERALIZATION DIAGNOSIS ---
+Metric      | Train    | Test     | Gap (Train-Test) | Status
+----------------------------------------------------------------------
+PR-AUC      | 0.334927 | 0.330974 | 0.003952         | Well-Balanced
+F1-Score    | 0.415716 | 0.411660 | 0.004056         | Well-Balanced
+ROC-AUC     | 0.652145 | 0.646960 | 0.005185         | Well-Balanced
+
+--- FINAL TEST SET METRICS ---
+PR-AUC    : 0.330974
+F1-Score  : 0.411660
+Recall    : 0.731311
+Precision : 0.286453
+ROC-AUC   : 0.646960
+Accuracy  : 0.533088
+
+Execution Time (seconds): 26.755
+Imbalance Strategy: class_weight='balanced', criterion='gini' (fixed baseline hyperparameters)
+
+======================================================================
+CONFUSION MATRIX (TN, FP, FN, TP)
+75087, 82633, 12188, 33173
+
+CLASSIFICATION REPORT
+                 precision    recall  f1-score   support
+
+Ineffective (0)       0.86      0.48      0.61    157720
+  Effective (1)       0.29      0.73      0.41     45361
+
+       accuracy                           0.53    203081
+      macro avg       0.57      0.60      0.51    203081
+   weighted avg       0.73      0.53      0.57    203081
+
+======================================================================

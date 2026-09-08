@@ -1,0 +1,30 @@
+Model Name: LSTM (Baseline)
+Architecture: {'label': 'baseline', 'lstm_units': 64, 'dense_units': 32, 'dropout': 0.3, 'learning_rate': 0.001, 'batch_size': 2048}
+Execution Time (seconds): 2.543
+Optimal Decision Threshold: 0.479422
+
+--- GENERALIZATION ---
+PR-AUC  | Train=0.350336 Val=0.348685 Test=0.345250 Gap=0.005086 Well-Balanced
+ROC-AUC | Train=0.660246 Val=0.657758 Test=0.653975 Gap=0.006271
+F1      | Train=0.420741 Test=0.416171 Gap=0.004570
+
+Metrics:
+pr_auc: 0.345250
+f1_score: 0.416171
+recall: 0.684244
+roc_auc: 0.653975
+accuracy: 0.571186
+precision: 0.299020
+
+Confusion Matrix: TN=84959, FP=72761, FN=14323, TP=31038
+
+Classification Report:
+                 precision    recall  f1-score   support
+
+Ineffective (0)       0.86      0.54      0.66    157720
+  Effective (1)       0.30      0.68      0.42     45361
+
+       accuracy                           0.57    203081
+      macro avg       0.58      0.61      0.54    203081
+   weighted avg       0.73      0.57      0.61    203081
+

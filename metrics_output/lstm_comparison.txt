@@ -1,0 +1,25 @@
+LSTM: BASELINE VS TUNED COMPARISON
+====================================
+Selected configuration: Baseline
+Baseline validation PR-AUC: 0.348685
+Best validation PR-AUC:     0.348685
+Best config: {'label': 'baseline', 'lstm_units': 64, 'dense_units': 32, 'dropout': 0.3, 'learning_rate': 0.001, 'batch_size': 2048}
+
+Metric      Baseline (Test)   Final (Test)      Change      
+PR-AUC      0.345250          0.345250          +0.000000
+F1          0.416171          0.416171          +0.000000
+Precision   0.299020          0.299020          +0.000000
+Recall      0.684244          0.684244          +0.000000
+ROC-AUC     0.653975          0.653975          +0.000000
+Accuracy    0.571186          0.571186          +0.000000
+Threshold   0.479422          0.479422          +0.000000
+
+GENERALIZATION (final model)
+Split       PR-AUC      ROC-AUC     
+Train       0.350336    0.660246    
+Validation  0.348685    0.657758    
+Test        0.345250    0.653975    
+Train-Test PR-AUC gap: 0.005086 | Diagnosis: Well-Balanced
+
+SEQUENCE-STRUCTURE LIMITATION
+97.0% of unique patients have exactly one row; no genuine multi-step sequence exists, seq_len=1 used (no fabricated sequences).

@@ -1,0 +1,19 @@
+{
+  "selected_configuration": "Tuned (refined search)",
+  "params": {
+    "colsample_bytree": 1.0,
+    "gamma": 0.3,
+    "learning_rate": 0.07,
+    "max_depth": 2,
+    "min_child_weight": 12,
+    "n_estimators": 138,
+    "reg_alpha": 0.06,
+    "reg_lambda": 2.0,
+    "subsample": 0.7,
+    "scale_pos_weight": 3.4769627582963465,
+    "eval_metric": "logloss",
+    "n_jobs": 2,
+    "random_state": 42,
+    "tree_method": "hist"
+  }
+}

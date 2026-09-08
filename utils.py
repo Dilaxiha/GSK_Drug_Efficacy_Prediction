@@ -89,8 +89,15 @@ def load_data() -> tuple[pd.DataFrame, pd.Series]:
     return frame.drop(columns=["patient_id"], errors="ignore"), y
 
 
-def get_train_val_test_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series]:
-    """Return encoded 60/20/20 partitions with preprocessing fit on training data only."""
+def get_train_val_test_data(scale: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series]:
+    """Return encoded 60/20/20 partitions with preprocessing fit on training data only.
+
+    scale=True additionally fits a StandardScaler on the training partition only (encoder output)
+    and applies it to validation/test. Neural nets (LSTM/MLP) need this: raw/frequency-encoded
+    columns span wildly different magnitudes (e.g. wbc_count in the thousands vs age in the tens),
+    which can saturate gate/activation nonlinearities and stall learning. Tree models don't need it
+    (split thresholds are scale-invariant), so it stays opt-in and off by default.
+    """
     X_raw, y = load_data()
     X_train_raw, X_temp_raw, y_train, y_temp = train_test_split(
         X_raw, y, test_size=0.40, stratify=y, random_state=RANDOM_STATE
@@ -99,8 +106,15 @@ def get_train_val_test_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame,
         X_temp_raw, y_temp, test_size=0.50, stratify=y_temp, random_state=RANDOM_STATE
     )
     encoder = FrequencyCategoryEncoder().fit(X_train_raw)
-    return (encoder.transform(X_train_raw), encoder.transform(X_val_raw),
-            encoder.transform(X_test_raw), y_train, y_val, y_test)
+    X_train, X_val, X_test = (encoder.transform(X_train_raw), encoder.transform(X_val_raw), encoder.transform(X_test_raw))
+    if scale:
+        from sklearn.preprocessing import StandardScaler
+
+        scaler = StandardScaler().fit(X_train)
+        X_train = pd.DataFrame(scaler.transform(X_train), columns=X_train.columns, index=X_train.index)
+        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns, index=X_val.index)
+        X_test = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns, index=X_test.index)
+    return X_train, X_val, X_test, y_train, y_val, y_test
 
 
 def get_train_test_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series]:
@@ -120,6 +134,7 @@ def evaluate(y_true: pd.Series, probabilities: np.ndarray, threshold: float, mod
     predictions = (probabilities >= threshold).astype("int8")
     tn, fp, fn, tp = confusion_matrix(y_true, predictions, labels=[0, 1]).ravel()
     fpr, tpr, _ = roc_curve(y_true, probabilities)
+    precision_curve, recall_curve, pr_thresholds = precision_recall_curve(y_true, probabilities)
     return {"model_name": model_name, "threshold": float(threshold),
             "roc_auc": float(roc_auc_score(y_true, probabilities)),
             "pr_auc": float(average_precision_score(y_true, probabilities)),
@@ -128,12 +143,51 @@ def evaluate(y_true: pd.Series, probabilities: np.ndarray, threshold: float, mod
             "recall": float(recall_score(y_true, predictions, zero_division=0)),
             "f1_score": float(f1_score(y_true, predictions, zero_division=0)),
             "tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp),
-            "fpr": fpr.tolist(), "tpr": tpr.tolist(), "feature_names": [], "feature_importances": []}
+            "fpr": fpr.tolist(), "tpr": tpr.tolist(), "feature_names": [], "feature_importances": [],
+            "precision_curve": precision_curve.tolist(), "recall_curve": recall_curve.tolist(),
+            "pr_thresholds": pr_thresholds.tolist()}
+
+
+def tune_hyperparameters(estimator: Any, param_distributions: dict[str, Any], n_iter: int = 25, cv_splits: int = 3, search_n_jobs: int = 2, verbose: int = 2) -> tuple[dict[str, Any], float]:
+    """RandomizedSearchCV scored on average precision, using the training partition only.
+
+    search_n_jobs controls CV/candidate parallelism (kept modest by default to bound peak RAM on
+    memory-constrained machines, since each parallel worker holds its own copy of the training fold).
+    verbose is passed straight to RandomizedSearchCV so progress (candidate/fold timing) is visible.
+    """
+    from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
+
+    print(f"  -> preparing training partition for search ({n_iter} candidates x {cv_splits} folds = {n_iter * cv_splits} fits)...")
+    X_raw, y = load_data()
+    X_train_raw, _, y_train, _ = train_test_split(X_raw, y, test_size=0.40, stratify=y, random_state=RANDOM_STATE)
+    encoder = FrequencyCategoryEncoder().fit(X_train_raw)
+    X_train = encoder.transform(X_train_raw)
+    cv = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=RANDOM_STATE)
+    search = RandomizedSearchCV(
+        estimator, param_distributions, n_iter=n_iter, scoring="average_precision",
+        cv=cv, random_state=RANDOM_STATE, n_jobs=search_n_jobs, refit=False, verbose=verbose,
+    )
+    search.fit(X_train, y_train)
+    return dict(search.best_params_), float(search.best_score_)
+
+
+def cross_validate_average_precision(estimator: Any, cv_splits: int = 3, search_n_jobs: int = 2) -> float:
+    """Cross-validated average precision on the training partition only (for baseline vs tuned comparison)."""
+    from sklearn.model_selection import StratifiedKFold, cross_val_score
+
+    X_raw, y = load_data()
+    X_train_raw, _, y_train, _ = train_test_split(X_raw, y, test_size=0.40, stratify=y, random_state=RANDOM_STATE)
+    encoder = FrequencyCategoryEncoder().fit(X_train_raw)
+    X_train = encoder.transform(X_train_raw)
+    cv = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=RANDOM_STATE)
+    scores = cross_val_score(estimator, X_train, y_train, scoring="average_precision", cv=cv, n_jobs=search_n_jobs)
+    return float(scores.mean())
 
 
 def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalance_strategy: str) -> dict[str, Any]:
     ensure_output_dirs()
     started = time.perf_counter()
+    print(f"  -> [{model_name}] loading data and building leakage-safe 60/20/20 split...")
     X_raw, y = load_data()
     X_train_raw, X_temp_raw, y_train, y_temp = train_test_split(
         X_raw, y, test_size=0.40, stratify=y, random_state=RANDOM_STATE
@@ -143,7 +197,9 @@ def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalanc
     )
     encoder = FrequencyCategoryEncoder().fit(X_train_raw)
     X_train, X_val, X_test = (encoder.transform(X_train_raw), encoder.transform(X_val_raw), encoder.transform(X_test_raw))
+    print(f"  -> [{model_name}] fitting estimator on {len(X_train):,} training rows...")
     estimator.fit(X_train, y_train)
+    print(f"  -> [{model_name}] scoring train/validation/test partitions...")
     train_probs = estimator.predict_proba(X_train)[:, 1]
     val_probs = estimator.predict_proba(X_val)[:, 1]
     test_probs = estimator.predict_proba(X_test)[:, 1]
@@ -156,6 +212,9 @@ def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalanc
     test_f1 = float(f1_score(y_test, test_predictions, zero_division=0))
     train_roc_auc = float(roc_auc_score(y_train, train_probs))
     test_roc_auc = float(roc_auc_score(y_test, test_probs))
+    train_precision = float(precision_score(y_train, train_predictions, zero_division=0))
+    train_recall = float(recall_score(y_train, train_predictions, zero_division=0))
+    train_accuracy = float(accuracy_score(y_train, train_predictions))
     pr_auc_gap = train_pr_auc - test_pr_auc
     f1_gap = train_f1 - test_f1
     roc_auc_gap = train_roc_auc - test_roc_auc
@@ -171,7 +230,9 @@ def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalanc
         "train_f1": train_f1, "test_f1": test_f1,
         "train_roc_auc": train_roc_auc,
         "val_roc_auc": float(roc_auc_score(y_val, val_probs)),
+        "val_pr_auc": float(average_precision_score(y_val, val_probs)),
         "test_roc_auc": test_roc_auc,
+        "train_precision": train_precision, "train_recall": train_recall, "train_accuracy": train_accuracy,
         "pr_auc_gap": float(pr_auc_gap), "f1_gap": float(f1_gap),
         "roc_auc_gap": float(roc_auc_gap), "overfit_gap_auc": float(roc_auc_gap),
         "overfitting_diagnosis": diagnosis,
@@ -196,6 +257,7 @@ def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalanc
         )
         metrics["feature_importances"] = [float(value) for value in permutation.importances_mean]
 
+    print(f"  -> [{model_name}] saving model bundle, metrics, and report to {METRICS_DIR}...")
     bundle = {"preprocessing_state": encoder, "estimator": estimator, "feature_names": encoder.feature_names, "selected_threshold": threshold}
     joblib.dump(bundle, METRICS_DIR / f"{short_name}.pkl")
     (METRICS_DIR / f"{short_name}.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
@@ -245,3 +307,29 @@ def save_model_charts(metrics: dict[str, Any], short_name: str) -> None:
     matrix = np.array([[metrics["tn"], metrics["fp"]], [metrics["fn"], metrics["tp"]]])
     figure, axis = plt.subplots(figsize=(6, 5)); sns.heatmap(matrix, annot=True, fmt="d", cmap="Blues", cbar=False, ax=axis)
     axis.set(title=f"{metrics['model_name']} Confusion Matrix", xlabel="Predicted", ylabel="Actual"); figure.tight_layout(); figure.savefig(REPORTS_DIR / f"{short_name}_confusion_matrix.png", dpi=300); plt.close(figure)
+
+    if metrics.get("precision_curve") and metrics.get("recall_curve"):
+        figure, axis = plt.subplots(figsize=(8, 5))
+        axis.plot(metrics["recall_curve"], metrics["precision_curve"], color="#B23A48", label=f"PR-AUC = {metrics['pr_auc']:.4f}")
+        axis.set(title=f"{metrics['model_name']} Precision-Recall Curve", xlabel="Recall", ylabel="Precision")
+        axis.legend(loc="lower left"); figure.tight_layout(); figure.savefig(REPORTS_DIR / f"{short_name}_precision_recall_curve.png", dpi=300); plt.close(figure)
+
+    if metrics.get("pr_thresholds"):
+        thresholds = np.asarray(metrics["pr_thresholds"])
+        precision = np.asarray(metrics["precision_curve"][:-1])
+        recall = np.asarray(metrics["recall_curve"][:-1])
+        f1_curve = 2 * precision * recall / np.maximum(precision + recall, 1e-12)
+        figure, axis = plt.subplots(figsize=(8, 5))
+        axis.plot(thresholds, precision, label="Precision")
+        axis.plot(thresholds, recall, label="Recall")
+        axis.plot(thresholds, f1_curve, label="F1")
+        axis.axvline(metrics["threshold"], color="k", linestyle="--", label=f"Selected threshold = {metrics['threshold']:.3f}")
+        axis.set(title=f"{metrics['model_name']} Threshold vs Precision/Recall/F1", xlabel="Threshold", ylabel="Score")
+        axis.legend(); figure.tight_layout(); figure.savefig(REPORTS_DIR / f"{short_name}_threshold_sweep.png", dpi=300); plt.close(figure)
+
+    if metrics.get("feature_importances") and metrics.get("feature_names") and any(metrics["feature_importances"]):
+        importance = pd.Series(metrics["feature_importances"], index=metrics["feature_names"]).nlargest(15).sort_values()
+        figure, axis = plt.subplots(figsize=(8, 6))
+        importance.plot.barh(ax=axis, color="#287271")
+        axis.set(title=f"{metrics['model_name']} Top 15 Feature Importances", xlabel="Importance")
+        figure.tight_layout(); figure.savefig(REPORTS_DIR / f"{short_name}_feature_importance.png", dpi=300); plt.close(figure)

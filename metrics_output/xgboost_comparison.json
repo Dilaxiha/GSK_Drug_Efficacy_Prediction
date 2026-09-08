@@ -1,0 +1,75 @@
+{
+  "selected_configuration": "Tuned (refined search)",
+  "baseline_cv_pr_auc": 0.34373998121151006,
+  "broad_search_cv_pr_auc": 0.3474771480594782,
+  "refined_search_cv_pr_auc": 0.34777597136807614,
+  "broad_search_best_params": {
+    "colsample_bytree": 1.0,
+    "gamma": 0.1,
+    "learning_rate": 0.05,
+    "max_depth": 3,
+    "min_child_weight": 10,
+    "n_estimators": 152,
+    "reg_alpha": 0.01,
+    "reg_lambda": 2.0,
+    "subsample": 0.9
+  },
+  "refined_search_best_params": {
+    "colsample_bytree": 1.0,
+    "gamma": 0.3,
+    "learning_rate": 0.07,
+    "max_depth": 2,
+    "min_child_weight": 12,
+    "n_estimators": 138,
+    "reg_alpha": 0.06,
+    "reg_lambda": 2.0,
+    "subsample": 0.7
+  },
+  "final_params_used": {
+    "colsample_bytree": 1.0,
+    "gamma": 0.3,
+    "learning_rate": 0.07,
+    "max_depth": 2,
+    "min_child_weight": 12,
+    "n_estimators": 138,
+    "reg_alpha": 0.06,
+    "reg_lambda": 2.0,
+    "subsample": 0.7,
+    "scale_pos_weight": 3.4769627582963465,
+    "eval_metric": "logloss",
+    "n_jobs": 2,
+    "random_state": 42,
+    "tree_method": "hist"
+  },
+  "baseline_test": {
+    "pr_auc": 0.3444269473911318,
+    "f1_score": 0.41535223915383085,
+    "precision": 0.30139275766016715,
+    "recall": 0.6678865104384824,
+    "roc_auc": 0.6534505813433232,
+    "accuracy": 0.580024719200713,
+    "threshold": 0.48340120911598206
+  },
+  "final_test": {
+    "pr_auc": 0.3463651339236973,
+    "f1_score": 0.4165315932632575,
+    "precision": 0.3042850754157011,
+    "recall": 0.6599942682039638,
+    "roc_auc": 0.6545337059692179,
+    "accuracy": 0.5869973064934682,
+    "threshold": 0.4855189621448517
+  },
+  "generalization": {
+    "train_pr_auc": 0.3488771278718448,
+    "val_pr_auc": 0.3494428934293816,
+    "test_pr_auc": 0.3463651339236973,
+    "train_roc_auc": 0.6577284898124822,
+    "val_roc_auc": 0.6583936696260595,
+    "test_roc_auc": 0.6545337059692179,
+    "train_val_pr_auc_gap": -0.0005657655575367904,
+    "pr_auc_gap": 0.0025119939481475506,
+    "f1_gap": 0.00231098450090389,
+    "roc_auc_gap": 0.003194783843264326,
+    "overfitting_diagnosis": "Well-Balanced"
+  }
+}

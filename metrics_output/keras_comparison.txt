@@ -1,0 +1,22 @@
+KERAS MLP: BASELINE VS TUNED COMPARISON
+========================================
+Selected configuration: Tuned (deeper)
+Baseline validation PR-AUC: 0.347670
+Best validation PR-AUC:     0.348918
+Best config: {'label': 'deeper', 'hidden_units': [128, 64, 32], 'dropout': [0.3, 0.3, 0.2], 'l2': 0.0001, 'learning_rate': 0.001, 'batch_size': 2048}
+
+Metric      Baseline (Test)   Final (Test)      Change      
+PR-AUC      0.344667          0.345357          +0.000690
+F1          0.415886          0.417420          +0.001534
+Precision   0.304009          0.294613          -0.009396
+Recall      0.658054          0.715791          +0.057737
+ROC-AUC     0.653398          0.654037          +0.000639
+Accuracy    0.587115          0.553715          -0.033400
+Threshold   0.483902          0.466040          -0.017862
+
+GENERALIZATION (final model)
+Split       PR-AUC      ROC-AUC     
+Train       0.349982    0.659687    
+Validation  0.348918    0.657817    
+Test        0.345357    0.654037    
+Train-Test PR-AUC gap: 0.004625 | Diagnosis: Well-Balanced

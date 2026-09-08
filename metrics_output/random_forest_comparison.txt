@@ -1,0 +1,15 @@
+RANDOM FOREST: BASELINE VS TUNED COMPARISON
+============================================
+Selected configuration: Tuned
+Baseline CV PR-AUC (train-only, 3-fold): 0.343166
+Tuned CV PR-AUC (train-only, 3-fold):    0.343399
+Best params from search: {'class_weight': 'balanced_subsample', 'criterion': 'gini', 'max_depth': 15, 'max_features': 'log2', 'min_samples_leaf': 68, 'min_samples_split': 78, 'n_estimators': 91}
+
+Metric      Baseline (Test)   Final (Test)      
+PR-AUC      0.342601          0.342912          
+F1          0.416386          0.415960          
+Precision   0.293259          0.298614          
+Recall      0.717731          0.685236          
+ROC-AUC     0.652561          0.652631          
+Accuracy    0.550598          0.570191          
+Threshold   0.466299          0.473170          

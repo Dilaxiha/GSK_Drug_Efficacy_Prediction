@@ -1,38 +1,38 @@
 ======================================================================
 CLINICAL MODEL PERFORMANCE & OVERFITTING REPORT: Gradient Boosting
 ======================================================================
-Optimal Decision Threshold: 0.484903
+Optimal Decision Threshold: 0.491249
 
 --- MULTI-METRIC OVERFITTING & GENERALIZATION DIAGNOSIS ---
 Metric      | Train    | Test     | Gap (Train-Test) | Status
 ----------------------------------------------------------------------
-PR-AUC      | 0.357456 | 0.345911 | 0.011545         | Well-Balanced
-F1-Score    | 0.422455 | 0.416779 | 0.005675         | Well-Balanced
-ROC-AUC     | 0.665244 | 0.654322 | 0.010922         | Well-Balanced
+PR-AUC      | 0.353454 | 0.346358 | 0.007096         | Well-Balanced
+F1-Score    | 0.420884 | 0.416773 | 0.004111         | Well-Balanced
+ROC-AUC     | 0.662622 | 0.654479 | 0.008143         | Well-Balanced
 
 --- FINAL TEST SET METRICS ---
-PR-AUC    : 0.345911
-F1-Score  : 0.416779
-Recall    : 0.676264
-Precision : 0.301206
-ROC-AUC   : 0.654322
-Accuracy  : 0.577248
+PR-AUC    : 0.346358
+F1-Score  : 0.416773
+Recall    : 0.660942
+Precision : 0.304342
+ROC-AUC   : 0.654479
+Accuracy  : 0.586815
 
-Execution Time (seconds): 29.029
-Imbalance Strategy: class_weight='balanced' with early_stopping=True
+Execution Time (seconds): 31.953
+Imbalance Strategy: class_weight='balanced'; Tuned (regenerated from recorded hyperparameters)
 
 ======================================================================
 CONFUSION MATRIX (TN, FP, FN, TP)
-86552, 71168, 14685, 30676
+89190, 68530, 15380, 29981
 
 CLASSIFICATION REPORT
                  precision    recall  f1-score   support
 
-Ineffective (0)       0.85      0.55      0.67    157720
-  Effective (1)       0.30      0.68      0.42     45361
+Ineffective (0)       0.85      0.57      0.68    157720
+  Effective (1)       0.30      0.66      0.42     45361
 
-       accuracy                           0.58    203081
-      macro avg       0.58      0.61      0.54    203081
-   weighted avg       0.73      0.58      0.61    203081
+       accuracy                           0.59    203081
+      macro avg       0.58      0.61      0.55    203081
+   weighted avg       0.73      0.59      0.62    203081
 
 ======================================================================

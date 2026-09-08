@@ -1,0 +1,40 @@
+{
+  "selected_configuration": "Baseline",
+  "baseline_validation_pr_auc": 0.3486853805071801,
+  "best_validation_pr_auc": 0.3486853805071801,
+  "best_config": {
+    "lstm_units": 64,
+    "dense_units": 32,
+    "dropout": 0.3,
+    "learning_rate": 0.001,
+    "batch_size": 2048
+  },
+  "baseline_test": {
+    "pr_auc": 0.34524967545915525,
+    "f1_score": 0.41617055510860823,
+    "precision": 0.2990202217747763,
+    "recall": 0.6842441745111439,
+    "roc_auc": 0.6539750107267803,
+    "accuracy": 0.5711858814955609,
+    "threshold": 0.47942182421684265
+  },
+  "final_test": {
+    "pr_auc": 0.34524967545915525,
+    "f1_score": 0.41617055510860823,
+    "precision": 0.2990202217747763,
+    "recall": 0.6842441745111439,
+    "roc_auc": 0.6539750107267803,
+    "accuracy": 0.5711858814955609,
+    "threshold": 0.47942182421684265
+  },
+  "generalization": {
+    "train_pr_auc": 0.3503355762128134,
+    "val_pr_auc": 0.3486853805071801,
+    "test_pr_auc": 0.34524967545915525,
+    "pr_auc_gap": 0.005085900753658168,
+    "f1_gap": 0.004570384428667973,
+    "roc_auc_gap": 0.006271322149261738,
+    "overfitting_diagnosis": "Well-Balanced"
+  },
+  "sequence_structure_limitation": "97.0% of unique patients have exactly one row; no genuine multi-step sequence exists, seq_len=1 used (no fabricated sequences)."
+}
