@@ -1,0 +1,32 @@
+LIGHTGBM: BASELINE VS TUNED COMPARISON
+========================================
+Selected configuration: Tuned
+Baseline CV PR-AUC (train-only, 3-fold, fixed n_estimators=300): 0.345024
+Halving search best CV PR-AUC (train-only, 3-fold):                           0.347508
+Halving search best params: {'colsample_bytree': 0.8, 'learning_rate': np.float64(0.029763058787582307), 'max_depth': 3, 'min_child_samples': 17, 'num_leaves': 29, 'scale_pos_weight': 3.477, 'subsample': 0.6}
+Final model trees used: 4 of 1000 cap (early_stopping_rounds=15)
+
+Metric      Baseline (Test)   Final (Test)      Change      
+PR-AUC      0.309215          0.316361          +0.007146
+F1          0.405901          0.405853          -0.000048
+Precision   0.287153          0.286521          -0.000632
+Recall      0.692114          0.695531          +0.003417
+ROC-AUC     0.635126          0.634548          -0.000578
+Accuracy    0.547456          0.545132          -0.002324
+Threshold   0.249592          0.251608          +0.002016
+
+GENERALIZATION (final model)
+Split       PR-AUC      ROC-AUC     
+Train       0.319651    0.638045    
+Validation  0.318612    0.637805    
+Test        0.316361    0.634548    
+Train-Test PR-AUC gap: 0.003290 | Diagnosis: Well-Balanced
+
+LIGHTGBM (FINAL) VS EXISTING TUNED XGBOOST BASELINE (both on the untouched test set)
+Metric      XGBoost           LightGBM          Change      
+PR-AUC      0.346543          0.316361          -0.030182
+F1          0.416471          0.405853          -0.010618
+Precision   0.302477          0.286521          -0.015956
+Recall      0.668349          0.695531          +0.027182
+ROC-AUC     0.654528          0.634548          -0.019980
+Accuracy    0.581664          0.545132          -0.036532

@@ -7,7 +7,7 @@ import pandas as pd
 # Load Data into SQLite
 # ============================================================
 
-df = pd.read_csv("feature_engineered_clinical_data.csv")
+df = pd.read_csv("dataset/feature_engineered_clinical_data.csv")
 
 # Create an in-memory SQLite database
 conn = sqlite3.connect(":memory:")
@@ -71,7 +71,7 @@ run_query(
             WHEN age BETWEEN 30 AND 50 THEN '30-50'
             WHEN age BETWEEN 51 AND 65 THEN '51-65'
             ELSE 'Over 65'
-        END AS age_group,
+        END AS age_bucket,
 
         COUNT(*) AS total_patients,
 
@@ -84,7 +84,7 @@ run_query(
 
     FROM patients
 
-    GROUP BY age_group
+    GROUP BY age_bucket
 
     ORDER BY efficacy_pct DESC;
     """
@@ -198,8 +198,8 @@ run_query(
     """
     SELECT
         CASE
-            WHEN dosage_mg < 100 THEN 'Low (<100mg)'
-            WHEN dosage_mg BETWEEN 100 AND 500
+            WHEN dosage < 100 THEN 'Low (<100mg)'
+            WHEN dosage BETWEEN 100 AND 500
                 THEN 'Medium (100-500mg)'
             ELSE 'High (>500mg)'
         END AS dosage_level,

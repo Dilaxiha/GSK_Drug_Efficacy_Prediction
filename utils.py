@@ -184,7 +184,11 @@ def cross_validate_average_precision(estimator: Any, cv_splits: int = 3, search_
     return float(scores.mean())
 
 
-def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalance_strategy: str) -> dict[str, Any]:
+def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalance_strategy: str, eval_set_split: bool = False, fit_kwargs: dict[str, Any] | None = None) -> dict[str, Any]:
+    """eval_set_split=True fits with eval_set=[(X_val, y_val)] so estimators configured with
+    early stopping (e.g. XGBoost, LightGBM) can stop as soon as validation performance plateaus.
+    fit_kwargs are passed straight through to .fit() (e.g. verbose/callbacks/eval_metric), since
+    those differ across libraries (XGBoost vs LightGBM)."""
     ensure_output_dirs()
     started = time.perf_counter()
     print(f"  -> [{model_name}] loading data and building leakage-safe 60/20/20 split...")
@@ -198,7 +202,10 @@ def fit_evaluate_save(estimator: Any, model_name: str, short_name: str, imbalanc
     encoder = FrequencyCategoryEncoder().fit(X_train_raw)
     X_train, X_val, X_test = (encoder.transform(X_train_raw), encoder.transform(X_val_raw), encoder.transform(X_test_raw))
     print(f"  -> [{model_name}] fitting estimator on {len(X_train):,} training rows...")
-    estimator.fit(X_train, y_train)
+    if eval_set_split:
+        estimator.fit(X_train, y_train, eval_set=[(X_val, y_val)], **(fit_kwargs or {}))
+    else:
+        estimator.fit(X_train, y_train)
     print(f"  -> [{model_name}] scoring train/validation/test partitions...")
     train_probs = estimator.predict_proba(X_train)[:, 1]
     val_probs = estimator.predict_proba(X_val)[:, 1]

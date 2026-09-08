@@ -1,0 +1,17 @@
+{
+  "selected_configuration": "Tuned",
+  "params": {
+    "colsample_bytree": 0.8,
+    "learning_rate": 0.029763058787582307,
+    "max_depth": 3,
+    "min_child_samples": 17,
+    "num_leaves": 29,
+    "scale_pos_weight": 3.477,
+    "subsample": 0.6,
+    "n_estimators": 1000,
+    "subsample_freq": 1,
+    "n_jobs": 2,
+    "random_state": 42,
+    "verbose": -1
+  }
+}

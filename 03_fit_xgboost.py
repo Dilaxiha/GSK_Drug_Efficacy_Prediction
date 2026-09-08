@@ -1,142 +1,171 @@
-"""Fit and evaluate the leakage-safe XGBoost model: baseline vs tuned."""
+"""Fit and evaluate the leakage-safe XGBoost model: baseline vs tuned, tuned for an 8 GB machine.
+
+Memory/speed design:
+- tree_method="hist" everywhere (XGBoost's most memory-efficient split algorithm).
+- n_jobs capped at 2 (XGB_N_JOBS/SEARCH_N_JOBS), consistent with the other model scripts, so the
+  estimator's own threading never competes with the search's parallelism for the same 8 GB.
+- The shared FrequencyCategoryEncoder (utils.py) already emits float32 for numeric columns and
+  int16 for categoricals on every transform, so no extra float32 cast is needed before fit.
+- Early stopping (early_stopping_rounds=15, eval_metric="aucpr") with a high n_estimators cap
+  (1000) is used only for the two FINAL fits (baseline + tuned, via fit_evaluate_save's
+  eval_set_split=True) so tree building stops automatically once validation PR-AUC plateaus.
+  It is deliberately NOT used inside cross_validate_average_precision/the hyperparameter search:
+  those loop over CV folds internally and don't expose a per-fold, leakage-free eval_set, so a
+  small fixed n_estimators is used there instead (SEARCH_N_ESTIMATORS).
+- Hyperparameter search is a single HalvingRandomSearchCV pass over the training partition:
+  candidates start on a small row subset and only the strongest are promoted to progressively
+  larger subsets (factor=3), which replaces the old two-stage broad+refined RandomizedSearchCV
+  with fewer total fits and lower peak memory for the same search space.
+"""
 import json
 
 import numpy as np
+import joblib
 from scipy.stats import randint
-from sklearn.model_selection import train_test_split
+from sklearn.experimental import enable_halving_search_cv  # noqa: F401 (registers HalvingRandomSearchCV)
+from sklearn.model_selection import HalvingRandomSearchCV, StratifiedKFold, train_test_split
 from xgboost import XGBClassifier
 
 from utils import (
     METRICS_DIR,
     RANDOM_STATE,
+    FrequencyCategoryEncoder,
     cross_validate_average_precision,
     ensure_output_dirs,
     fit_evaluate_save,
     load_data,
     save_model_charts,
-    tune_hyperparameters,
 )
 
-# n_jobs capped at 2 (not -1), consistent with the Random Forest script, so the estimator's own
-# threading never competes with RandomizedSearchCV's own parallelism on this 8 GB machine.
 XGB_N_JOBS = 2
 SEARCH_N_JOBS = 2
+SEARCH_N_ESTIMATORS = 300  # fixed cap used only inside CV/search (no per-fold early stopping)
+FINAL_N_ESTIMATORS = 1000  # high cap for the two final fits; early stopping halts well before this
+EARLY_STOPPING_ROUNDS = 15
+EVAL_METRIC = "aucpr"
 
-# Leakage fix: the previous script computed scale_pos_weight from the FULL dataset via
-# load_data(), before any split. It must reflect the training partition only, so we reproduce
-# the exact same 60/20/20 split used inside fit_evaluate_save/tune_hyperparameters here.
+# Leakage fix: scale_pos_weight must reflect the training partition only, so we reproduce the
+# exact same 60/20/20 split used inside fit_evaluate_save/the search helpers here.
 _X_raw, _y = load_data()
 _, _, _y_train, _ = train_test_split(_X_raw, _y, test_size=0.40, stratify=_y, random_state=RANDOM_STATE)
 _negative_count, _positive_count = np.bincount(_y_train.astype(int))
 SCALE_POS_WEIGHT = float(_negative_count / _positive_count)
 
-BASELINE_PARAMS = dict(
-    n_estimators=200, max_depth=6, learning_rate=0.1,
-    scale_pos_weight=SCALE_POS_WEIGHT, eval_metric="logloss",
-    n_jobs=XGB_N_JOBS, random_state=42, tree_method="hist",
-)
+BASELINE_HYPERPARAMS = dict(max_depth=4, learning_rate=0.1, scale_pos_weight=SCALE_POS_WEIGHT)
 
-# Compact search (n_iter=8, cv=3 -> 24 fits). No early stopping: fit_evaluate_save has no
-# eval_set hook, so n_estimators is bounded by the search itself and overfitting is instead
-# controlled via subsample/colsample_bytree/gamma/reg_alpha/reg_lambda and shallower max_depth.
+# Focused, shallow-tree search space: max_depth kept to 3-6 and scale_pos_weight swept around the
+# train-only computed weight, both aimed squarely at the class imbalance without overfitting.
 PARAM_DISTRIBUTIONS = {
-    "n_estimators": randint(100, 251),
-    "max_depth": randint(3, 8),
-    "learning_rate": [0.03, 0.05, 0.08, 0.1, 0.15, 0.2],
+    "max_depth": randint(3, 7),
+    "learning_rate": [0.03, 0.05, 0.08, 0.1, 0.15],
     "min_child_weight": randint(1, 11),
     "subsample": [0.6, 0.7, 0.8, 0.9, 1.0],
     "colsample_bytree": [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
     "gamma": [0.0, 0.1, 0.3, 0.5, 1.0],
     "reg_alpha": [0.0, 0.01, 0.1, 0.5, 1.0],
     "reg_lambda": [0.5, 1.0, 1.5, 2.0, 3.0],
+    "scale_pos_weight": [round(SCALE_POS_WEIGHT * factor, 3) for factor in (0.5, 0.75, 1.0, 1.25, 1.5)],
 }
 
 
-def _refine_param_distributions(center: dict) -> dict:
-    """Build a narrower search grid centered on a prior best result (cheaper fits since the
-    winning region so far uses shallow trees: max_depth<=4, modest n_estimators)."""
-    depth = int(center["max_depth"])
+def _final_params(hyperparams: dict) -> dict:
+    """Attach the final-fit-only settings (high n_estimators cap + early stopping) to a set of
+    tuned hyperparameters, so the actual tree count is decided automatically at fit time."""
     return {
-        "n_estimators": randint(max(80, center["n_estimators"] - 60), center["n_estimators"] + 61),
-        "max_depth": [max(2, depth - 1), depth, depth + 1],
-        "learning_rate": sorted({round(center["learning_rate"] * factor, 4) for factor in (0.6, 0.8, 1.0, 1.4, 1.8)}),
-        "min_child_weight": randint(max(1, center["min_child_weight"] - 5), center["min_child_weight"] + 6),
-        "subsample": sorted({round(min(1.0, max(0.5, center["subsample"] + delta)), 2) for delta in (-0.2, -0.1, 0.0, 0.1)}),
-        "colsample_bytree": sorted({round(min(1.0, max(0.5, center["colsample_bytree"] + delta)), 2) for delta in (-0.2, -0.1, 0.0)}),
-        "gamma": sorted({round(max(0.0, center["gamma"] + delta), 3) for delta in (-0.05, 0.0, 0.1, 0.2)}),
-        "reg_alpha": sorted({round(max(0.0, center["reg_alpha"] + delta), 3) for delta in (-0.005, 0.0, 0.05, 0.1)}),
-        "reg_lambda": sorted({round(max(0.1, center["reg_lambda"] + delta), 2) for delta in (-0.5, 0.0, 0.5, 1.0)}),
+        **hyperparams,
+        "n_estimators": FINAL_N_ESTIMATORS,
+        "early_stopping_rounds": EARLY_STOPPING_ROUNDS,
+        "eval_metric": EVAL_METRIC,
+        "n_jobs": XGB_N_JOBS,
+        "random_state": 42,
+        "tree_method": "hist",
     }
+
+
+def _halving_search(param_distributions: dict) -> tuple[dict, float]:
+    """Single-pass successive-halving search on the train-only partition: cheap candidates are
+    screened on a small row subset first, and only the top third are promoted each round to a
+    3x larger subset -- faster and lower peak memory than exhaustively refitting every candidate
+    on the full ~600k-row training partition."""
+    print("  -> preparing training partition for halving search...")
+    X_raw, y = load_data()
+    X_train_raw, _, y_train, _ = train_test_split(X_raw, y, test_size=0.40, stratify=y, random_state=RANDOM_STATE)
+    encoder = FrequencyCategoryEncoder().fit(X_train_raw)
+    X_train = encoder.transform(X_train_raw)
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE)
+    search = HalvingRandomSearchCV(
+        XGBClassifier(
+            n_estimators=SEARCH_N_ESTIMATORS, eval_metric=EVAL_METRIC,
+            n_jobs=1, random_state=42, tree_method="hist",
+        ),
+        param_distributions,
+        n_candidates=40, factor=3, resource="n_samples", min_resources=5000,
+        scoring="average_precision", cv=cv, random_state=RANDOM_STATE,
+        n_jobs=SEARCH_N_JOBS, refit=False, verbose=2,
+    )
+    search.fit(X_train, y_train)
+    return dict(search.best_params_), float(search.best_score_)
 
 
 def main() -> None:
     ensure_output_dirs()
 
-    print("=== [1/8] Baseline XGBoost: training ===")
+    print("=== [1/6] Baseline XGBoost: training (early stopping, n_estimators cap=1000) ===")
     baseline_metrics = fit_evaluate_save(
-        XGBClassifier(**BASELINE_PARAMS),
+        XGBClassifier(**_final_params(BASELINE_HYPERPARAMS)),
         "XGBoost (Baseline)", "xgboost_baseline",
-        f"scale_pos_weight={SCALE_POS_WEIGHT:.4f} (computed from training partition only)",
+        f"scale_pos_weight={SCALE_POS_WEIGHT:.4f} (train partition only); "
+        f"early stopping (rounds={EARLY_STOPPING_ROUNDS}, metric={EVAL_METRIC}, cap={FINAL_N_ESTIMATORS})",
+        eval_set_split=True, fit_kwargs={"verbose": False},
     )
     save_model_charts(baseline_metrics, "xgboost_baseline")
 
-    print("=== [2/8] Baseline XGBoost: cross-validated PR-AUC (train-only) ===")
+    print("=== [2/6] Baseline XGBoost: cross-validated PR-AUC (train-only, fixed n_estimators, no early stopping) ===")
     baseline_cv_pr_auc = cross_validate_average_precision(
-        XGBClassifier(**{**BASELINE_PARAMS, "n_jobs": 1}), cv_splits=3, search_n_jobs=SEARCH_N_JOBS,
+        XGBClassifier(**BASELINE_HYPERPARAMS, n_estimators=SEARCH_N_ESTIMATORS, eval_metric=EVAL_METRIC,
+                       n_jobs=1, random_state=42, tree_method="hist"),
+        cv_splits=3, search_n_jobs=SEARCH_N_JOBS,
     )
     print(f"Baseline CV PR-AUC: {baseline_cv_pr_auc:.6f}")
 
-    print("=== [3/8] Broad hyperparameter search (train-only StratifiedKFold CV, scoring=average_precision) ===")
-    broad_params, broad_cv_pr_auc = tune_hyperparameters(
-        XGBClassifier(
-            scale_pos_weight=SCALE_POS_WEIGHT, eval_metric="logloss",
-            n_jobs=1, random_state=42, tree_method="hist",
-        ),
-        PARAM_DISTRIBUTIONS, n_iter=8, cv_splits=3, search_n_jobs=SEARCH_N_JOBS, verbose=2,
-    )
-    print(f"Broad search best CV PR-AUC: {broad_cv_pr_auc:.6f}")
-    print(f"Broad search best params: {broad_params}")
+    print("=== [3/6] Single-pass HalvingRandomSearchCV (train-only StratifiedKFold CV, scoring=average_precision) ===")
+    best_params, tuned_cv_pr_auc = _halving_search(PARAM_DISTRIBUTIONS)
+    print(f"Halving search best CV PR-AUC: {tuned_cv_pr_auc:.6f}")
+    print(f"Halving search best params: {best_params}")
 
-    print("=== [4/8] Refined hyperparameter search (narrow grid centered on broad-search winner) ===")
-    refined_distributions = _refine_param_distributions(broad_params)
-    refined_params, refined_cv_pr_auc = tune_hyperparameters(
-        XGBClassifier(
-            scale_pos_weight=SCALE_POS_WEIGHT, eval_metric="logloss",
-            n_jobs=1, random_state=42, tree_method="hist",
-        ),
-        refined_distributions, n_iter=8, cv_splits=3, search_n_jobs=SEARCH_N_JOBS, verbose=2,
-    )
-    print(f"Refined search best CV PR-AUC: {refined_cv_pr_auc:.6f}")
-    print(f"Refined search best params: {refined_params}")
-
-    print("=== [5/8] Selecting baseline vs broad vs refined configuration (decision based on CV, not test) ===")
-    candidates = [
-        ("Baseline", baseline_cv_pr_auc, BASELINE_PARAMS),
-        ("Tuned (broad search)", broad_cv_pr_auc, {**broad_params, "scale_pos_weight": SCALE_POS_WEIGHT, "eval_metric": "logloss", "n_jobs": XGB_N_JOBS, "random_state": 42, "tree_method": "hist"}),
-        ("Tuned (refined search)", refined_cv_pr_auc, {**refined_params, "scale_pos_weight": SCALE_POS_WEIGHT, "eval_metric": "logloss", "n_jobs": XGB_N_JOBS, "random_state": 42, "tree_method": "hist"}),
-    ]
-    selected, tuned_cv_pr_auc, final_params = max(candidates, key=lambda candidate: candidate[1])
-    best_params = broad_params if selected == "Tuned (broad search)" else refined_params if selected == "Tuned (refined search)" else {}
-    strategy_note = f"selected='{selected}' (CV PR-AUC: baseline={baseline_cv_pr_auc:.4f}, broad={broad_cv_pr_auc:.4f}, refined={refined_cv_pr_auc:.4f})"
+    print("=== [4/6] Selecting baseline vs tuned configuration (decision based on CV, not test) ===")
+    if tuned_cv_pr_auc > baseline_cv_pr_auc:
+        final_params = _final_params(best_params)
+        selected = "Tuned"
+        strategy_note = f"tuned via HalvingRandomSearchCV (CV PR-AUC={tuned_cv_pr_auc:.4f} vs baseline {baseline_cv_pr_auc:.4f})"
+    else:
+        final_params = _final_params(BASELINE_HYPERPARAMS)
+        selected = "Baseline"
+        strategy_note = f"baseline retained (CV PR-AUC={baseline_cv_pr_auc:.4f} >= tuned {tuned_cv_pr_auc:.4f})"
     print(f"Selected configuration: {selected}")
 
-    print(f"=== [6/8] Final XGBoost ({selected}): fitting and evaluating on the untouched test set ===")
+    print(f"=== [5/6] Final XGBoost ({selected}): fitting and evaluating on the untouched test set ===")
     final_metrics = fit_evaluate_save(
         XGBClassifier(**final_params),
         "XGBoost", "xgboost",
-        f"scale_pos_weight={SCALE_POS_WEIGHT:.4f} (train-only); {strategy_note}",
+        f"scale_pos_weight={final_params['scale_pos_weight']:.4f} (train-only); {strategy_note}; "
+        f"early stopping (rounds={EARLY_STOPPING_ROUNDS}, metric={EVAL_METRIC}, cap={FINAL_N_ESTIMATORS})",
+        eval_set_split=True, fit_kwargs={"verbose": False},
     )
     save_model_charts(final_metrics, "xgboost")
+    final_bundle = joblib.load(METRICS_DIR / "xgboost.pkl")
+    trees_used = getattr(final_bundle["estimator"], "best_iteration", None)
+    if trees_used is not None:
+        print(f"Early stopping halted at tree {trees_used + 1} of {FINAL_N_ESTIMATORS} cap")
 
-    print("=== [7/8] Saving baseline-vs-tuned comparison + best hyperparameters ===")
+    print("=== [6/6] Saving baseline-vs-tuned comparison + best hyperparameters ===")
     comparison = {
         "selected_configuration": selected,
         "baseline_cv_pr_auc": baseline_cv_pr_auc,
-        "broad_search_cv_pr_auc": broad_cv_pr_auc,
-        "refined_search_cv_pr_auc": refined_cv_pr_auc,
-        "broad_search_best_params": broad_params,
-        "refined_search_best_params": refined_params,
+        "tuned_cv_pr_auc": tuned_cv_pr_auc,
+        "best_params_from_search": best_params,
         "final_params_used": final_params,
+        "final_trees_used": trees_used + 1 if trees_used is not None else None,
         "baseline_test": {key: baseline_metrics[key] for key in ("pr_auc", "f1_score", "precision", "recall", "roc_auc", "accuracy", "threshold")},
         "final_test": {key: final_metrics[key] for key in ("pr_auc", "f1_score", "precision", "recall", "roc_auc", "accuracy", "threshold")},
         "generalization": {
@@ -154,15 +183,14 @@ def main() -> None:
         "XGBOOST: BASELINE VS TUNED COMPARISON",
         "=" * 40,
         f"Selected configuration: {selected}",
-        f"Baseline CV PR-AUC (train-only, 3-fold):        {baseline_cv_pr_auc:.6f}",
-        f"Broad search best CV PR-AUC (train-only, 3-fold):  {broad_cv_pr_auc:.6f}",
-        f"Refined search best CV PR-AUC (train-only, 3-fold): {refined_cv_pr_auc:.6f}",
-        f"Broad search best params: {broad_params}",
-        f"Refined search best params: {refined_params}",
+        f"Baseline CV PR-AUC (train-only, 3-fold, fixed n_estimators={SEARCH_N_ESTIMATORS}): {baseline_cv_pr_auc:.6f}",
+        f"Halving search best CV PR-AUC (train-only, 3-fold):                           {tuned_cv_pr_auc:.6f}",
+        f"Halving search best params: {best_params}",
+        f"Final model trees used: {trees_used + 1 if trees_used is not None else 'N/A'} of {FINAL_N_ESTIMATORS} cap (early_stopping_rounds={EARLY_STOPPING_ROUNDS})",
         "",
         f"{'Metric':<12}{'Baseline (Test)':<18}{'Final (Test)':<18}{'Change':<12}",
     ]
-    print("=== [8/8] Done ===")
+    print("=== Done ===")
     for label, key in (("PR-AUC", "pr_auc"), ("F1", "f1_score"), ("Precision", "precision"), ("Recall", "recall"), ("ROC-AUC", "roc_auc"), ("Accuracy", "accuracy"), ("Threshold", "threshold")):
         change = final_metrics[key] - baseline_metrics[key]
         lines.append(f"{label:<12}{baseline_metrics[key]:<18.6f}{final_metrics[key]:<18.6f}{change:+.6f}")
@@ -179,7 +207,9 @@ def main() -> None:
     (METRICS_DIR / "xgboost_comparison.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
     print("\nXGBoost training complete.")
+    
 
 
 if __name__ == "__main__":
     main()
+

@@ -1,0 +1,38 @@
+======================================================================
+CLINICAL MODEL PERFORMANCE & OVERFITTING REPORT: LightGBM (Baseline)
+======================================================================
+Optimal Decision Threshold: 0.249592
+
+--- MULTI-METRIC OVERFITTING & GENERALIZATION DIAGNOSIS ---
+Metric      | Train    | Test     | Gap (Train-Test) | Status
+----------------------------------------------------------------------
+PR-AUC      | 0.312635 | 0.309215 | 0.003420         | Well-Balanced
+F1-Score    | 0.407925 | 0.405901 | 0.002024         | Well-Balanced
+ROC-AUC     | 0.639253 | 0.635126 | 0.004127         | Well-Balanced
+
+--- FINAL TEST SET METRICS ---
+PR-AUC    : 0.309215
+F1-Score  : 0.405901
+Recall    : 0.692114
+Precision : 0.287153
+ROC-AUC   : 0.635126
+Accuracy  : 0.547456
+
+Execution Time (seconds): 28.706
+Imbalance Strategy: scale_pos_weight=3.4770 (train partition only); early stopping (rounds=15, metric=average_precision, cap=1000)
+
+======================================================================
+CONFUSION MATRIX (TN, FP, FN, TP)
+79783, 77937, 13966, 31395
+
+CLASSIFICATION REPORT
+                 precision    recall  f1-score   support
+
+Ineffective (0)       0.85      0.51      0.63    157720
+  Effective (1)       0.29      0.69      0.41     45361
+
+       accuracy                           0.55    203081
+      macro avg       0.57      0.60      0.52    203081
+   weighted avg       0.73      0.55      0.58    203081
+
+======================================================================

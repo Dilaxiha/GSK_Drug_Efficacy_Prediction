@@ -1,24 +1,23 @@
 XGBOOST: BASELINE VS TUNED COMPARISON
 ========================================
-Selected configuration: Tuned (refined search)
-Baseline CV PR-AUC (train-only, 3-fold):        0.343740
-Broad search best CV PR-AUC (train-only, 3-fold):  0.347477
-Refined search best CV PR-AUC (train-only, 3-fold): 0.347776
-Broad search best params: {'colsample_bytree': 1.0, 'gamma': 0.1, 'learning_rate': 0.05, 'max_depth': 3, 'min_child_weight': 10, 'n_estimators': 152, 'reg_alpha': 0.01, 'reg_lambda': 2.0, 'subsample': 0.9}
-Refined search best params: {'colsample_bytree': 1.0, 'gamma': 0.3, 'learning_rate': 0.07, 'max_depth': 2, 'min_child_weight': 12, 'n_estimators': 138, 'reg_alpha': 0.06, 'reg_lambda': 2.0, 'subsample': 0.7}
+Selected configuration: Tuned
+Baseline CV PR-AUC (train-only, 3-fold, fixed n_estimators=300): 0.345894
+Halving search best CV PR-AUC (train-only, 3-fold):                           0.347908
+Halving search best params: {'colsample_bytree': 0.8, 'gamma': 0.5, 'learning_rate': 0.03, 'max_depth': 3, 'min_child_weight': 8, 'reg_alpha': 0.01, 'reg_lambda': 0.5, 'scale_pos_weight': 3.477, 'subsample': 0.9}
+Final model trees used: 266 of 1000 cap (early_stopping_rounds=15)
 
 Metric      Baseline (Test)   Final (Test)      Change      
-PR-AUC      0.344427          0.346365          +0.001938
-F1          0.415352          0.416532          +0.001179
-Precision   0.301393          0.304285          +0.002892
-Recall      0.667887          0.659994          -0.007892
-ROC-AUC     0.653451          0.654534          +0.001083
-Accuracy    0.580025          0.586997          +0.006973
-Threshold   0.483401          0.485519          +0.002118
+PR-AUC      0.346601          0.346543          -0.000058
+F1          0.416824          0.416471          -0.000353
+Precision   0.299480          0.302477          +0.002998
+Recall      0.685368          0.668349          -0.017019
+ROC-AUC     0.654577          0.654528          -0.000050
+Accuracy    0.571634          0.581664          +0.010030
+Threshold   0.478888          0.484132          +0.005243
 
 GENERALIZATION (final model)
 Split       PR-AUC      ROC-AUC     
-Train       0.348877    0.657728    
-Validation  0.349443    0.658394    
-Test        0.346365    0.654534    
-Train-Test PR-AUC gap: 0.002512 | Diagnosis: Well-Balanced
+Train       0.349919    0.658451    
+Validation  0.349194    0.658444    
+Test        0.346543    0.654528    
+Train-Test PR-AUC gap: 0.003377 | Diagnosis: Well-Balanced
